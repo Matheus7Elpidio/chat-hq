@@ -1,137 +1,73 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+'use client';
 
-export interface User {
-  id: string;
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+
+const API_URL = ''; // O proxy do Vite cuida do redirecionamento
+
+interface User {
+  id: number;
   name: string;
-  email: string;
-  role: 'Admin' | 'Supervisor' | 'Agente' | 'Cliente';
-  department: string;
-  avatar?: string;
+  role: 'admin' | 'supervisor' | 'agent' | 'client';
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: Omit<User, 'id'> & { password: string }) => Promise<boolean>;
+  token: string | null;
+  login: (token: string, user: User) => void;
   logout: () => void;
-  isLoading: boolean;
+  isLoading: boolean; // Indica se está tentando autenticar via token
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
-
-// Dados simulados de usuários
-const mockUsers: Array<User & { password: string }> = [
-  {
-    id: "1",
-    name: "Ana Suporte",
-    email: "admin@empresa.com",
-    password: "admin123",
-    role: "Admin",
-    department: "TI"
-  },
-  {
-    id: "2", 
-    name: "Pedro Supervisor",
-    email: "supervisor@empresa.com",
-    password: "sup123",
-    role: "Supervisor",
-    department: "TI"
-  },
-  {
-    id: "3",
-    name: "Carlos Agente", 
-    email: "agente@empresa.com",
-    password: "agent123",
-    role: "Agente",
-    department: "Suporte"
-  },
-  {
-    id: "4",
-    name: "João Cliente",
-    email: "cliente@empresa.com", 
-    password: "client123",
-    role: "Cliente",
-    department: "Vendas"
-  },
-  {
-    id: "5",
-    name: "Maria Cliente",
-    email: "maria@cliente.com",
-    password: "maria123",
-    role: "Cliente",
-    department: "N/A"
-  }
-];
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se há usuário logado no localStorage
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem('authToken');
+      if (storedToken) {
+        try {
+          const response = await fetch(`${API_URL}/api/auth/me`, {
+            headers: {
+              'Authorization': `Bearer ${storedToken}`
+            }
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            setToken(storedToken);
+            setUser(userData);
+          } else {
+            // Token inválido ou expirado
+            localStorage.removeItem('authToken');
+          }
+        } catch (error) {
+          console.error("Falha ao verificar token", error);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      setIsLoading(false);
-      return true;
-    }
-    
-    setIsLoading(false);
-    return false;
-  };
-
-  const register = async (userData: Omit<User, 'id'> & { password: string }): Promise<boolean> => {
-    setIsLoading(true);
-    
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Verificar se email já existe
-    const emailExists = mockUsers.some(u => u.email === userData.email);
-    if (emailExists) {
-      setIsLoading(false);
-      return false;
-    }
-    
-    // Criar novo usuário
-    const newUser = {
-      ...userData,
-      id: Date.now().toString()
-    };
-    
-    mockUsers.push(newUser);
-    
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-    
-    setIsLoading(false);
-    return true;
+  const login = (newToken: string, newUser: User) => {
+    localStorage.setItem('authToken', newToken);
+    setToken(newToken);
+    setUser(newUser);
   };
 
   const logout = () => {
+    localStorage.removeItem('authToken');
+    setToken(null);
     setUser(null);
-    localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -139,8 +75,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   }
   return context;
 };

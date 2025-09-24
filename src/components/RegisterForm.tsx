@@ -1,171 +1,157 @@
+'use client';
+
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { Headphones, Mail, Lock, User, Building, Eye, EyeOff } from "lucide-react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useToast } from "./ui/use-toast";
+import { Headphones, Mail, Lock, User, Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface RegisterFormProps {
   onToggleMode: () => void;
 }
 
+const API_URL = ''; // O proxy do Vite cuida do redirecionamento
+
 const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "" as "Admin" | "Supervisor" | "Agente" | "Cliente" | "",
-    department: ""
-  });
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<'client' | 'agent' | 'supervisor' | 'admin' | '' >('');
   const [showPassword, setShowPassword] = useState(false);
-  const { register, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.email || !formData.password || !formData.role || !formData.department) {
+    setIsLoading(true);
+
+    if (!name || !email || !password || !role) {
       toast({
-        title: "Erro",
-        description: "Preencha todos os campos",
-        variant: "destructive"
+        title: "Erro de Validação",
+        description: "Todos os campos são obrigatórios.",
+        variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem",
-        variant: "destructive"
+    try {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password, role }),
       });
-      return;
-    }
 
-    if (formData.password.length < 6) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        // O `data.error` virá do nosso backend
+        throw new Error(data.error || 'Falha ao tentar registrar.');
+      }
+
       toast({
-        title: "Erro",
-        description: "A senha deve ter pelo menos 6 caracteres",
-        variant: "destructive"
+        title: "Cadastro realizado com sucesso!",
+        description: "Você já pode fazer login com suas novas credenciais.",
       });
-      return;
-    }
 
-    const success = await register({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role as "Admin" | "Supervisor" | "Agente" | "Cliente",
-      department: formData.department
-    });
-    
-    if (!success) {
+      // Muda para o modo de login após o sucesso
+      onToggleMode();
+
+    } catch (error: any) {
       toast({
-        title: "Erro no cadastro",
-        description: "Email já cadastrado",
-        variant: "destructive"
+        title: "Erro no Cadastro",
+        description: error.message || "Ocorreu um erro desconhecido.",
+        variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const updateFormData = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-primary rounded-full">
-              <Headphones className="h-8 w-8 text-primary-foreground" />
+     <div className="min-h-screen w-full lg:grid lg:grid-cols-2">
+        <div className="hidden bg-muted lg:block">
+            <div className="flex flex-col justify-between h-full bg-zinc-900 p-8 text-white">
+                <div className="flex items-center gap-3 font-bold text-2xl">
+                    <Headphones className="h-8 w-8"/>
+                    ChatHQ
+                </div>
+                <div className='grid gap-2'>
+                    <p className='text-lg font-semibold'>"Desde que adotamos o ChatHQ, nossa comunicação interna e o suporte ao cliente atingiram um novo patamar de eficiência."</p>
+                    <footer className="text-sm text-zinc-400">Roberto, CEO da InovaTech</footer>
+                </div>
             </div>
-          </div>
-          <h1 className="text-3xl font-bold">Criar Conta</h1>
-          <p className="text-muted-foreground">Cadastre-se no sistema de suporte</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Cadastro</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo</Label>
+       </div>
+       <div className="flex items-center justify-center py-12">
+         <div className="mx-auto grid w-[380px] gap-6">
+           <div className="grid gap-2 text-center">
+            <Headphones className="h-10 w-10 mx-auto text-primary"/>
+             <h1 className="text-3xl font-bold">Criar Conta</h1>
+             <p className="text-balance text-muted-foreground">
+               Preencha os campos para criar seu acesso
+             </p>
+           </div>
+           <form onSubmit={handleSubmit} className="grid gap-4">
+             <div className="grid gap-2">
+               <Label htmlFor="name">Nome</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="name"
                     type="text"
                     placeholder="Seu nome completo"
-                    value={formData.name}
-                    onChange={(e) => updateFormData("name", e.target.value)}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="pl-10"
+                    required
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+             </div>
+             <div className="grid gap-2">
+               <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="seu@email.com"
-                    value={formData.email}
-                    onChange={(e) => updateFormData("email", e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
+                    required
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
+             </div>
+             <div className="grid gap-2">
                 <Label htmlFor="role">Função</Label>
-                <Select value={formData.role} onValueChange={(value) => updateFormData("role", value)}>
+                <Select value={role} onValueChange={(value) => setRole(value as any)} >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione sua função" />
+                    <SelectValue placeholder="Selecione sua função no sistema" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Cliente">Cliente</SelectItem>
-                    <SelectItem value="Agente">Agente de Suporte</SelectItem>
-                    <SelectItem value="Supervisor">Supervisor</SelectItem>
-                    <SelectItem value="Admin">Administrador</SelectItem>
+                    <SelectItem value="client">Cliente</SelectItem>
+                    <SelectItem value="agent">Agente de Suporte</SelectItem>
+                    <SelectItem value="supervisor">Supervisor</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="department">Departamento</Label>
-                <div className="relative">
-                  <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="department"
-                    type="text"
-                    placeholder="Ex: TI, Vendas, Marketing..."
-                    value={formData.department}
-                    onChange={(e) => updateFormData("department", e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+             <div className="grid gap-2">
+               <Label htmlFor="password">Senha</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Mínimo 6 caracteres"
-                    value={formData.password}
-                    onChange={(e) => updateFormData("password", e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
+                    required
                   />
                   <button
                     type="button"
@@ -175,43 +161,21 @@ const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Digite a senha novamente"
-                    value={formData.confirmPassword}
-                    onChange={(e) => updateFormData("confirmPassword", e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Criando conta..." : "Criar Conta"}
-              </Button>
-            </form>
-
-            <div className="mt-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                Já tem conta?{" "}
-                <button
-                  onClick={onToggleMode}
-                  className="text-primary hover:underline font-medium"
-                >
-                  Fazer login
-                </button>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+             </div>
+             <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? "Criando conta..." : "Criar Conta"}
+             </Button>
+           </form>
+           <div className="mt-4 text-center text-sm">
+             Já possui uma conta?{" "}
+             <button onClick={onToggleMode} className="underline">
+               Fazer Login
+             </button>
+           </div>
+         </div>
+       </div>
+     </div>
   );
 };
 

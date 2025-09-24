@@ -1,9 +1,12 @@
+import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { MessageSquare, Star, CheckCircle, Loader2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
+import io, { Socket } from 'socket.io-client';
 
-const API_URL = "http://localhost:3001";
+// A URL da API agora é relativa, para usar o proxy do Vite
+const API_URL = "/api";
 
 // Interface para as métricas do agente
 interface AgentMetrics {
@@ -14,7 +17,7 @@ interface AgentMetrics {
 
 // Função para buscar as métricas do agente
 const fetchAgentMetrics = async (agentId: number): Promise<AgentMetrics> => {
-  const response = await fetch(`${API_URL}/api/agent/metrics/${agentId}`);
+  const response = await fetch(`${API_URL}/agent/metrics/${agentId}`);
   if (!response.ok) {
     throw new Error('Falha ao buscar as métricas do agente.');
   }
@@ -23,6 +26,26 @@ const fetchAgentMetrics = async (agentId: number): Promise<AgentMetrics> => {
 
 const AgentDashboard = () => {
   const { user } = useAuth();
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    // Conecta ao socket e se anuncia como online
+    if (user && !socketRef.current) {
+      // A conexão agora é relativa, para usar o proxy do Vite
+      socketRef.current = io();
+
+      socketRef.current.on('connect', () => {
+        console.log('Conectado ao WebSocket como agente.');
+        socketRef.current?.emit('agent_online', user);
+      });
+
+      // Limpeza ao desmontar o componente
+      return () => {
+        socketRef.current?.disconnect();
+        socketRef.current = null;
+      };
+    }
+  }, [user]);
 
   const { data: metrics, isLoading, isError } = useQuery<AgentMetrics>({
     queryKey: ['agentMetrics', user?.id],

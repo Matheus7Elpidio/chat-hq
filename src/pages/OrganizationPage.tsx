@@ -1,9 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import SectorManagement from "@/components/management/sectors/SectorManagement";
-import UserSectorManagement from "@/components/management/users/UserSectorManagement";
-import ShortcutsManagement from "@/components/management/shortcuts/ShortcutsManagement";
-import CannedResponsesManagement from "@/components/management/canned-responses/CannedResponsesManagement";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import SectorManagement from "../components/management/sectors/SectorManagement";
+import UserSectorManagement from "../components/management/users/UserSectorManagement";
+import ShortcutsManagement from "../components/management/shortcuts/ShortcutsManagement";
+import CannedResponsesManagement from "../components/management/canned-responses/CannedResponsesManagement";
 
 const OrganizationPage = () => {
   return (

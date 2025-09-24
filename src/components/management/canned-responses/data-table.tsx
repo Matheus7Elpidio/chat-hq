@@ -10,8 +10,8 @@ import {
   SortingState,
   ColumnFiltersState
 } from "@tanstack/react-table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "../../ui/input";
+import { Button } from "../../ui/button";
 import { 
   Table, 
   TableBody, 
@@ -19,7 +19,7 @@ import {
   TableHead, 
   TableHeader, 
   TableRow 
-} from "@/components/ui/table";
+} from "../../ui/table";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

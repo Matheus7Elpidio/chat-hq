@@ -1,30 +1,43 @@
+
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
+import { Button } from "../ui/button";
+import { useAuth } from "../../contexts/AuthContext";
 import { History, Users, BarChart2, Eye, ArrowRight, Loader2 } from 'lucide-react';
-
-const API_URL = "http://localhost:3001";
 
 interface AdminMetrics {
   activeConversations: number;
   onlineAgents: number;
 }
 
-const fetchAdminMetrics = async (): Promise<AdminMetrics> => {
-  const response = await fetch(`${API_URL}/api/admin/metrics`);
+// 1. Modificar a função para aceitar o token
+const fetchAdminMetrics = async (token: string | null): Promise<AdminMetrics> => {
+  if (!token) {
+    throw new Error('Token de autenticação não encontrado.');
+  }
+  
+  const response = await fetch(`/api/admin/metrics`, { // URL já estava correta
+    headers: {
+      // 2. Adicionar o cabeçalho de autorização
+      'Authorization': `Bearer ${token}`,
+    },
+  });
   if (!response.ok) {
     throw new Error('Falha ao buscar métricas do admin');
   }
   return response.json();
 };
 
-export function SupervisorDashboard() {
-  const { user } = useAuth();
+export default function SupervisorDashboard() {
+  // 3. Obter o token do contexto de autenticação
+  const { user, token } = useAuth();
+  
+  // 4. Atualizar a chamada do useQuery
   const { data: metrics, isLoading, isError } = useQuery<AdminMetrics>({
-    queryKey: ['adminMetrics'],
-    queryFn: fetchAdminMetrics,
+    queryKey: ['adminMetrics', token], // Chave da query depende do token
+    queryFn: () => fetchAdminMetrics(token), // Passa o token para a função
+    enabled: !!token, // Só executa a query se o token existir
     refetchInterval: 10000, // Atualiza a cada 10 segundos
   });
 

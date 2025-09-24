@@ -1,27 +1,48 @@
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { MessageSquare, Users, BarChart, Loader2 } from "lucide-react";
+import { useAuth } from '../contexts/AuthContext'; // Importar o hook de autenticação
 
-const API_URL = "http://localhost:3001";
+const API_URL = ""; // O proxy do Vite cuida do redirecionamento
 
 interface AdminMetrics {
   activeConversations: number;
   onlineAgents: number;
 }
 
-const fetchAdminMetrics = async (): Promise<AdminMetrics> => {
-  const response = await fetch(`${API_URL}/api/admin/metrics`);
+// 1. Modificar a função para aceitar o token
+const fetchAdminMetrics = async (token: string | null): Promise<AdminMetrics> => {
+  if (!token) {
+    throw new Error('Token de autenticação não encontrado.');
+  }
+
+  const response = await fetch(`${API_URL}/api/admin/metrics`, {
+    headers: {
+      // 2. Adicionar o cabeçalho de autorização
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
   if (!response.ok) {
-    // Isso será capturado pelo react-query e definirá `isError` como true
+    if (response.status === 401) {
+        throw new Error('Não autorizado. Faça o login novamente.');
+    }
     throw new Error('Falha ao buscar as métricas do painel de administração.');
   }
   return response.json();
 };
 
 const Dashboard = () => {
+  // 3. Obter o token do contexto de autenticação
+  const { token } = useAuth();
+
   const { data, isLoading, isError } = useQuery<AdminMetrics>({ 
-    queryKey: ['adminMetrics'], 
-    queryFn: fetchAdminMetrics,
+    // A queryKey deve incluir o token para que o React Query refaça a busca se o token mudar
+    queryKey: ['adminMetrics', token],
+    // 4. Passar o token para a função da query
+    queryFn: () => fetchAdminMetrics(token),
+    // A query só será executada se o token existir
+    enabled: !!token, 
     refetchInterval: 15000,
   });
 

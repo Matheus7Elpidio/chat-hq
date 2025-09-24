@@ -1,4 +1,4 @@
-import ChatShortcuts from "@/components/ChatShortcuts";
+import ChatShortcuts from "../components/ChatShortcuts";
 
 const ShortcutsPage = () => {
   return <ChatShortcuts />;

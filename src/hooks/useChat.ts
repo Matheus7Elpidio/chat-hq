@@ -1,9 +1,40 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import io, { Socket } from 'socket.io-client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from "@/components/ui/use-toast";
+import { useAuth } from '../contexts/AuthContext';
+import { toast } from "../components/ui/use-toast";
 
-// ... (Interfaces Message, ChatRoom, SupervisorMessage)
+interface Message {
+  id: string;
+  conversationId: string;
+  senderId: number;
+  senderName: string;
+  senderRole: 'client' | 'agent' | 'supervisor';
+  content: string;
+  timestamp: string;
+  type: 'message' | 'event';
+}
+
+interface Participant {
+  id: number;
+  name: string;
+  role: string;
+}
+
+interface ChatRoom {
+  id: string;
+  participants: Participant[];
+  lastMessageTimestamp: string;
+  sectorName: string;
+}
+
+interface SupervisorMessage {
+  id: string;
+  conversationId: string;
+  senderId: number;
+  senderName: string;
+  content: string;
+  timestamp: string;
+}
 
 interface TransferPayload {
   conversationId: string;
@@ -23,41 +54,84 @@ interface TransferNotification {
   message: string;
 }
 
-const SOCKET_SERVER_URL = "http://localhost:3001";
-
 export const useChat = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const socketRef = useRef<Socket | null>(null);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [supervisorMessages, setSupervisorMessages] = useState<Record<string, SupervisorMessage[]>>({});
 
-  // ... (useEffect para buscar histórico)
+  const fetchAgentChats = useCallback(async () => {
+    if (user?.role !== 'agent' || !token) return;
+    try {
+      const response = await fetch('/api/chats/agent', { 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+      if (!response.ok) throw new Error('Falha ao buscar atendimentos do agente.');
+      const data: ChatRoom[] = await response.json();
+      setChatRooms(data);
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'Erro', description: 'Não foi possível carregar seus atendimentos.', variant: 'destructive' });
+    }
+  }, [user, token]);
+
+  useEffect(() => {
+    if (user?.role === 'agent') {
+      fetchAgentChats();
+    }
+  }, [user, fetchAgentChats]);
+
 
   useEffect(() => {
     if (!user) return;
 
-    socketRef.current = io(SOCKET_SERVER_URL, { 
+    socketRef.current = io({ 
       query: { userId: user.id, userRole: user.role } 
     });
     const socket = socketRef.current;
 
-    // ... (listeners existentes: receive_message, etc.)
+    socket.on('connect', () => {
+      console.log('Socket.IO conectado!');
+    });
 
-    // NOVO: Listener para notificação de transferência
+    socket.on('connect_error', (err) => {
+      console.error('Socket.IO Erro de conexão:', err);
+    });
+
+    socket.on('receive_message', (message: Message) => {
+      setMessages(prev => ({
+        ...prev,
+        [message.conversationId]: [...(prev[message.conversationId] || []), message]
+      }));
+    });
+
+    socket.on('chat_assigned', (newRoom: ChatRoom) => {
+        setChatRooms(prev => {
+            // Evita duplicatas
+            if (prev.find(room => room.id === newRoom.id)) {
+                return prev;
+            }
+            return [newRoom, ...prev];
+        });
+        toast({ 
+            title: "Novo Atendimento", 
+            description: `Um novo chat com ${newRoom.participants.find(p => p.role === 'client')?.name || 'cliente'} foi atribuído a você.` 
+        });
+    });
+
     socket.on('chat_transfer_notification', (notification: TransferNotification) => {
       toast({
         title: "Transferência de Atendimento",
         description: notification.message,
         duration: 10000,
       });
-      // Opcional: Atualizar a lista de chats para refletir a nova conversa
+      // O agente que recebe a transferência, precisa atualizar sua lista
+      fetchAgentChats(); 
     });
 
-    // NOVO: Listener para confirmar que a transferência foi completada
     socket.on('chat_transfer_completed', ({ conversationId }: { conversationId: string }) => {
-      // Remove a sala de chat da UI do agente que transferiu
       setChatRooms(prev => prev.filter(room => room.id !== conversationId));
       if (selectedRoom === conversationId) {
         setSelectedRoom(null);
@@ -66,15 +140,29 @@ export const useChat = () => {
     });
 
     return () => {
+      socket.off('connect');
+      socket.off('connect_error');
+      socket.off('receive_message');
+      socket.off('chat_assigned');
       socket.off('chat_transfer_notification');
       socket.off('chat_transfer_completed');
       socket.disconnect();
     };
-  }, [user, selectedRoom]);
+  }, [user, selectedRoom, fetchAgentChats]);
 
-  const sendMessage = (content: string) => { /* ... */ };
+  const sendMessage = (content: string) => {
+    if (socketRef.current && selectedRoom && user) {
+      const message = {
+        conversationId: selectedRoom,
+        senderId: user.id,
+        senderName: user.name,
+        senderRole: user.role,
+        content,
+      };
+      socketRef.current.emit('send_message', message);
+    }
+  };
 
-  // NOVA: Função para emitir o evento de transferência
   const transferChat = (payload: TransferPayload) => {
     socketRef.current?.emit('transfer_chat', payload);
   };
@@ -86,6 +174,6 @@ export const useChat = () => {
     selectedRoom,
     setSelectedRoom,
     sendMessage,
-    transferChat, // Expor a nova função
+    transferChat,
   };
 };

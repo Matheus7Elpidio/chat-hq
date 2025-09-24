@@ -1,15 +1,14 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "./components/ui/toaster";
+import { Toaster as Sonner } from "./components/ui/sonner";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Layouts e Páginas Principais
-import Sidebar from "./components/Sidebar";
+import DashboardLayout from "./components/DashboardLayout";
 import AuthPage from "./components/AuthPage";
 import NotFound from "./pages/NotFound";
-import DashboardLayout from "./components/DashboardLayout"; // Usando o novo Layout
 
 // Páginas do Cliente
 import SectorSelection from "./pages/SectorSelection";
@@ -18,16 +17,16 @@ import ClientChat from "./pages/ClientChat";
 // Páginas do Agente
 import AgentDashboard from "./components/DashboardModular";
 import ChatSystem from "./components/ChatSystem";
-import AgentAnalytics from "./components/Analytics";
-import AgentSettings from "./components/SettingsPage";
+import AgentSettingsPage from "./pages/agent/SettingsPage";
+import TestPage from "./pages/agent/TestPage"; // Import the TestPage component
 
 // Páginas do Admin/Supervisor
-import SupervisorDashboard from "./components/admin/SupervisorDashboard";
+import SupervisorDashboard from "./components/admin/SupervisorDashboard"; 
 import ChatHistory from "./components/admin/ChatHistory";
 import RealTimeMonitor from "./components/admin/RealTimeMonitor";
-import UsersPage from "./pages/admin/UsersPage";         // Nova página
-import ReportsPage from "./pages/admin/ReportsPage";       // Nova página
-import AdminSettingsPage from "./pages/admin/SettingsPage"; // Nova página
+import UsersPage from "./pages/admin/UsersPage";
+import ReportsPage from "./pages/admin/ReportsPage";
+import AdminSettingsPage from "./pages/admin/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -39,7 +38,7 @@ const AppContent = () => {
   }
 
   switch (user.role) {
-    case 'Cliente':
+    case 'client':
       return (
         <Routes>
           <Route path="/" element={<Navigate to="/select-sector" replace />} />
@@ -49,8 +48,7 @@ const AppContent = () => {
         </Routes>
       );
 
-    case 'Admin':
-    case 'Supervisor':
+    case 'admin':
       return (
         <Routes>
           <Route element={<DashboardLayout />}>
@@ -58,7 +56,6 @@ const AppContent = () => {
             <Route path="/admin/dashboard" element={<SupervisorDashboard />} />
             <Route path="/admin/chat-history" element={<ChatHistory />} />
             <Route path="/admin/monitor" element={<RealTimeMonitor />} />
-            {/* ROTAS ADICIONADAS PARA O ADMIN */}
             <Route path="/admin/users" element={<UsersPage />} />
             <Route path="/admin/reports" element={<ReportsPage />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
@@ -67,19 +64,34 @@ const AppContent = () => {
         </Routes>
       );
 
-    case 'Agente':
-    default:
+    case 'supervisor':
+      return (
+        <Routes>
+          <Route element={<DashboardLayout />}>
+            <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin/dashboard" element={<SupervisorDashboard />} />
+            <Route path="/admin/chat-history" element={<ChatHistory />} />
+            <Route path="/admin/monitor" element={<RealTimeMonitor />} />
+            <Route path="/settings" element={<AgentSettingsPage />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      );
+
+    case 'agent':
       return (
         <Routes>
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<AgentDashboard />} />
             <Route path="/chat" element={<ChatSystem />} />
-            <Route path="/analytics" element={<AgentAnalytics />} />
-            <Route path="/settings" element={<AgentSettings />} />
+            <Route path="/settings" element={<AgentSettingsPage />} />
+            <Route path="/test" element={<TestPage />} /> {/* Add the test route */}
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       );
+    default:
+      return <Routes><Route path="*" element={<NotFound />} /></Routes>;
   }
 };
 

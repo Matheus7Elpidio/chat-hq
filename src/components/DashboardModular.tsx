@@ -1,4 +1,4 @@
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import Dashboard from "./Dashboard";
 import AgentDashboard from "./AgentDashboard";
 import ClientDashboard from "./ClientDashboard";
@@ -9,12 +9,12 @@ const DashboardModular = () => {
   if (!user) return null;
 
   switch (user.role) {
-    case "Admin":
-    case "Supervisor":
+    case "admin":
+    case "supervisor":
       return <Dashboard />;
-    case "Agente":
+    case "agent":
       return <AgentDashboard />;
-    case "Cliente":
+    case "client":
       return <ClientDashboard />;
     default:
       return <Dashboard />;
