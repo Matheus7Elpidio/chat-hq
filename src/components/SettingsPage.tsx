@@ -22,7 +22,9 @@ import {
   Globe,
   Shield,
   Wifi,
-  Server
+  Server,
+  Power,
+  BarChart
 } from "lucide-react";
 
 const SettingsPage = () => {
@@ -139,7 +141,7 @@ const SettingsPage = () => {
 
   if (!user || (user.role !== "Admin" && user.role !== "Supervisor")) {
     return (
-      <div className="p-6 bg-dashboard-bg min-h-screen">
+      <div className="p-6 bg-background text-foreground min-h-screen">
         <Card>
           <CardContent className="flex items-center justify-center p-12">
             <div className="text-center">
@@ -156,7 +158,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-dashboard-bg min-h-screen">
+    <div className="p-6 space-y-6 bg-background text-foreground min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -187,10 +189,10 @@ const SettingsPage = () => {
               {getStatusBadge(connectionStatus.glpi)}
             </div>
             {connectionStatus.glpi === "connected" && (
-              <div className="mt-3 text-sm text-muted-foreground">
-                <p>✅ Sincronização de usuários ativa</p>
-                <p>✅ Sincronização de tickets ativa</p>
-                <p>✅ Última sincronização: há 5 minutos</p>
+              <div className="mt-3 text-sm text-muted-foreground space-y-1">
+                <p className="flex items-center"><Check className="h-4 w-4 mr-2 text-success" />Sincronização de usuários ativa</p>
+                <p className="flex items-center"><Check className="h-4 w-4 mr-2 text-success" />Sincronização de tickets ativa</p>
+                <p className="flex items-center"><Power className="h-4 w-4 mr-2" />Última sincronização: há 5 minutos</p>
               </div>
             )}
           </CardContent>
@@ -212,10 +214,10 @@ const SettingsPage = () => {
               {getStatusBadge(connectionStatus.n8n)}
             </div>
             {connectionStatus.n8n === "connected" && (
-              <div className="mt-3 text-sm text-muted-foreground">
-                <p>🤖 Agent respondendo automaticamente</p>
-                <p>⚡ Regras de escalação ativas</p>
-                <p>📊 Última resposta: há 2 minutos</p>
+              <div className="mt-3 text-sm text-muted-foreground space-y-1">
+                <p className="flex items-center"><Bot className="h-4 w-4 mr-2" />Agent respondendo automaticamente</p>
+                <p className="flex items-center"><Zap className="h-4 w-4 mr-2" />Regras de escalação ativas</p>
+                <p className="flex items-center"><BarChart className="h-4 w-4 mr-2" />Última resposta: há 2 minutos</p>
               </div>
             )}
           </CardContent>

@@ -52,6 +52,14 @@ const mockUsers: Array<User & { password: string }> = [
     password: "client123",
     role: "Cliente",
     department: "Vendas"
+  },
+  {
+    id: "5",
+    name: "Maria Cliente",
+    email: "maria@cliente.com",
+    password: "maria123",
+    role: "Cliente",
+    department: "N/A"
   }
 ];
 
