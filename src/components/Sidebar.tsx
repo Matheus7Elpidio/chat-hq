@@ -9,54 +9,101 @@ import {
   UserCircle,
   Menu,
   X,
-  Headphones
+  Headphones,
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   // Simulando dados do usuário logado
-  const user = {
-    name: "Admin Sistema",
-    role: "Administrador",
-    status: "online"
+  if (!user) return null;
+
+  // Menu baseado no role do usuário
+  const getMenuItems = () => {
+    const baseItems = [
+      { 
+        name: "Dashboard", 
+        icon: LayoutDashboard, 
+        path: "/", 
+        notifications: 0,
+        roles: ["Admin", "Supervisor", "Agente", "Cliente"]
+      },
+    ];
+
+    const roleBasedItems = [];
+
+    if (user.role === "Admin" || user.role === "Supervisor") {
+      roleBasedItems.push(
+        { 
+          name: "Chat Suporte", 
+          icon: MessageSquare, 
+          path: "/chat", 
+          notifications: 3,
+          roles: ["Admin", "Supervisor", "Agente"]
+        },
+        { 
+          name: "Usuários", 
+          icon: Users, 
+          path: "/users", 
+          notifications: 0,
+          roles: ["Admin", "Supervisor"]
+        },
+        { 
+          name: "Analytics", 
+          icon: BarChart3, 
+          path: "/analytics", 
+          notifications: 0,
+          roles: ["Admin", "Supervisor"]
+        }
+      );
+    }
+
+    if (user.role === "Agente") {
+      roleBasedItems.push(
+        { 
+          name: "Chat Suporte", 
+          icon: MessageSquare, 
+          path: "/chat", 
+          notifications: 3,
+          roles: ["Admin", "Supervisor", "Agente"]
+        }
+      );
+    }
+
+    if (user.role === "Cliente") {
+      roleBasedItems.push(
+        { 
+          name: "Meus Tickets", 
+          icon: MessageSquare, 
+          path: "/tickets", 
+          notifications: 1,
+          roles: ["Cliente"]
+        }
+      );
+    }
+
+    roleBasedItems.push(
+      { 
+        name: "Configurações", 
+        icon: Settings, 
+        path: "/settings", 
+        notifications: 0,
+        roles: ["Admin", "Supervisor", "Agente", "Cliente"]
+      }
+    );
+
+    return [...baseItems, ...roleBasedItems].filter(item => 
+      item.roles.includes(user.role)
+    );
   };
 
-  const menuItems = [
-    { 
-      name: "Dashboard", 
-      icon: LayoutDashboard, 
-      path: "/", 
-      notifications: 0 
-    },
-    { 
-      name: "Chat Suporte", 
-      icon: MessageSquare, 
-      path: "/chat", 
-      notifications: 3 
-    },
-    { 
-      name: "Usuários", 
-      icon: Users, 
-      path: "/users", 
-      notifications: 0 
-    },
-    { 
-      name: "Analytics", 
-      icon: BarChart3, 
-      path: "/analytics", 
-      notifications: 0 
-    },
-    { 
-      name: "Configurações", 
-      icon: Settings, 
-      path: "/settings", 
-      notifications: 0 
-    }
-  ];
+  const menuItems = getMenuItems();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -65,6 +112,10 @@ const Sidebar = () => {
       case "away": return "bg-status-away";
       default: return "bg-status-offline";
     }
+  };
+
+  const handleLogout = () => {
+    logout();
   };
 
   return (
@@ -96,13 +147,24 @@ const Sidebar = () => {
         <div className="flex items-center space-x-3">
           <div className="relative">
             <UserCircle className="h-8 w-8" />
-            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${getStatusColor(user.status)}`}></div>
+            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-status-online`}></div>
           </div>
           {!isCollapsed && (
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-sm">{user.name}</p>
               <p className="text-xs text-sidebar-foreground/70">{user.role}</p>
             </div>
+          )}
+          {!isCollapsed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-sidebar-foreground hover:bg-sidebar-accent"
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           )}
         </div>
       </div>
