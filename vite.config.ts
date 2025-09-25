@@ -11,13 +11,22 @@ export default defineConfig({
     },
   },
   server: {
-    // Esta seção é crucial para o login funcionar
+    host: '0.0.0.0',
+    port: 5000,
+    // Allow all hosts for Replit proxy
+    allowedHosts: true,
     proxy: {
-      // Redireciona requisições que começam com /api para o backend
+      // Redirect requests starting with /api to the backend
       '/api': {
-        target: 'http://localhost:3001', // Seu servidor backend
-        changeOrigin: true, // Necessário para evitar erros de CORS
+        target: 'http://localhost:3001',
+        changeOrigin: true,
         secure: false,
+      },
+      // Proxy Socket.IO connections
+      '/socket.io': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        ws: true,
       },
     },
   },
