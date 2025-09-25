@@ -34,6 +34,7 @@ export default function RealTimeMonitor() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Connect to backend server via proxy
     socketRef.current = io();
 
     socketRef.current.on('update_conversations', (conversations) => {

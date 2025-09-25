@@ -31,7 +31,6 @@ const AgentDashboard = () => {
   useEffect(() => {
     // Conecta ao socket e se anuncia como online
     if (user && !socketRef.current) {
-      // A conexão agora é relativa, para usar o proxy do Vite
       socketRef.current = io();
 
       socketRef.current.on('connect', () => {

@@ -87,6 +87,7 @@ export const useChat = () => {
   useEffect(() => {
     if (!user) return;
 
+    // Connect to backend server via proxy
     socketRef.current = io({ 
       query: { userId: user.id, userRole: user.role } 
     });
@@ -94,6 +95,11 @@ export const useChat = () => {
 
     socket.on('connect', () => {
       console.log('Socket.IO conectado!');
+      // If user is an agent, announce as online
+      if (user.role === 'agent') {
+        socket.emit('agent_online', user);
+        console.log('Agente anunciado como online:', user.name);
+      }
     });
 
     socket.on('connect_error', (err) => {
